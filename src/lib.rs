@@ -160,6 +160,7 @@ mod table;
 
 pub type Index = usize;
 
+pub use bytes_decoder::BytesDecoder;
 pub use bytes_encoder::BytesEncoder;
 pub use bytes_encoder_mut::BytesEncoderMut;
 pub use decoder::Decoder;

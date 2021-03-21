@@ -1,7 +1,6 @@
-use crate::bytes_decoder::BytesDecoder;
-use crate::decoder::Decoder;
-use crate::{BytesEncoder, Encoder, EncoderMut, Index};
-use crate::{BytesEncoderMut, Error};
+use crate::{
+    BytesDecoder, BytesEncoder, BytesEncoderMut, Decoder, Encoder, EncoderMut, Error, Index,
+};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::ops::Deref;
