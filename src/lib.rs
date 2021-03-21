@@ -190,7 +190,7 @@ mod tests {
         println!("HEX: {}", str);
     }
 
-    /*#[test]
+    #[test]
     fn sorting() {
         let str: Vec<char> = "EEEEAAACCCCCCCBBBBBBDD".chars().collect();
         let mut table = Table::default();
@@ -299,5 +299,5 @@ mod tests {
         println!("Number of chars in decoded string .... {}", decoded.len());
         println!("Time to encode ....................... {} μs", encode_time);
         println!("Time to decode ....................... {} μs", decode_time);
-    }*/
+    }
 }
