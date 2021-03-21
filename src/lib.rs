@@ -174,22 +174,24 @@ mod tests {
     use std::time::Instant;
 
     #[test]
-    fn test_docs() {
-        let str: Vec<char> = "AAAAABBBBBBBBBBCCCAAAAAAAAAA".chars().collect();
-
-        // Here, instead of adding the items to the table beforehand, we can use
-        // the `_mut` version of the encoder to build the table as it runs.
+    fn sorting() {
+        let str: Vec<char> = "EEEEAAACCCCCCCBBBBBBDD".chars().collect();
         let mut table = Table::default();
-        for byte in table.encode_bytes_mut(&str).unwrap().flatten() {
-            print!("{:02X} ", byte);
+        table.extend(str.iter().copied());
+
+        for chr in table.iter() {
+            print!("{}", chr);
         }
         println!();
 
-        // 01 05 03 0A 05 03 01 0A
+        for chr in table.iter_sorted() {
+            print!("{}", chr);
+        }
+        println!();
     }
 
     #[test]
-    fn it_works() {
+    fn large_string() {
         let input = "................................................................\
         ..........................XXXXXXXXXXXX..........................\
         ......................XXXXXXXXXXXXXXXXXXXX......................\
@@ -265,9 +267,12 @@ mod tests {
         // Encode the ASCII image into a sequence of RLE bytes
         let start = Instant::now();
         let encoded: Vec<u8> = table.encode_bytes_mut(&chars).unwrap().flatten().collect();
+        let encode_time = (Instant::now() - start).as_micros();
 
         // Decode the bytes back into a string
+        let start = Instant::now();
         let decoded: String = table.decode_bytes(&encoded).collect();
+        let decode_time = (Instant::now() - start).as_micros();
 
         assert_eq!(input, decoded);
 
@@ -275,5 +280,7 @@ mod tests {
         println!("Number of unique symbols ............. {}", table.len());
         println!("Number of bytes, encoded ............. {}", encoded.len());
         println!("Number of chars in decoded string .... {}", decoded.len());
+        println!("Time to encode ....................... {} μs", encode_time);
+        println!("Time to decode ....................... {} μs", decode_time);
     }
 }

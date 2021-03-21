@@ -10,12 +10,21 @@ use std::slice::SliceIndex;
 /// A table to store items to be encoded into run-length format.
 #[derive(Clone, Debug)]
 pub struct Table<T> {
+    /// This is a list of the items in the order they were added,
+    /// their positions in this list will not ever change.
     items: Vec<T>,
+
+    /// This is a sorted list of the items (usize maps to the item's
+    /// index in `items`) for fast lookup/retrieval when encoding.
+    sorted: Vec<usize>,
 }
 
 impl<T> Default for Table<T> {
     fn default() -> Self {
-        Self { items: Vec::new() }
+        Self {
+            items: Vec::new(),
+            sorted: Vec::new(),
+        }
     }
 }
 
@@ -27,6 +36,7 @@ where
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             items: Vec::with_capacity(capacity),
+            sorted: Vec::with_capacity(capacity),
         }
     }
 
@@ -68,14 +78,20 @@ where
     /// of the table.
     pub fn clear(&mut self) {
         self.items.clear();
+        self.sorted.clear();
     }
 
     pub(crate) fn insert_or_get(&mut self, item: &T) -> usize {
-        match self.items.binary_search(item) {
-            Ok(i) => i,
+        match self
+            .sorted
+            .binary_search_by(|&ind| self.items[ind].cmp(item))
+        {
+            Ok(i) => self.sorted[i],
             Err(i) => {
-                self.items.insert(i, item.clone());
-                i
+                let ind = self.items.len();
+                self.items.push(item.clone());
+                self.sorted.insert(i, ind);
+                ind
             }
         }
     }
@@ -241,6 +257,17 @@ where
             run: None,
         }
     }
+
+    pub fn iter(&self) -> TableIter<T> {
+        TableIter { items: &self.items }
+    }
+
+    pub fn iter_sorted(&self) -> SortedTableIter<T> {
+        SortedTableIter {
+            items: &self.items,
+            sorted: &self.sorted,
+        }
+    }
 }
 
 impl<T> AsRef<[T]> for Table<T> {
@@ -273,14 +300,48 @@ where
 #[cfg(feature = "serde")]
 impl<'de, T> Deserialize<'de> for Table<T>
 where
+    T: Ord,
     Vec<T>: Deserialize<'de>,
 {
     fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
     where
         D: Deserializer<'de>,
     {
-        Ok(Self {
-            items: Vec::<T>::deserialize(deserializer)?,
+        let items = Vec::<T>::deserialize(deserializer)?;
+        let mut sorted = Vec::with_capacity(items.len());
+        sorted.extend(0..items.len());
+        sorted.sort_by(|&a, &b| items[a].cmp(&items[b]));
+        Ok(Self { items, sorted })
+    }
+}
+
+pub struct TableIter<'a, T> {
+    items: &'a [T],
+}
+
+impl<'a, T> Iterator for TableIter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.items.get(0).and_then(|item| {
+            self.items = &self.items[1..];
+            Some(item)
+        })
+    }
+}
+
+pub struct SortedTableIter<'a, T> {
+    items: &'a [T],
+    sorted: &'a [usize],
+}
+
+impl<'a, T> Iterator for SortedTableIter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.sorted.get(0).and_then(|&i| {
+            self.sorted = &self.sorted[1..];
+            Some(&self.items[i])
         })
     }
 }
