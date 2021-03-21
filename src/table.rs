@@ -82,10 +82,7 @@ where
     }
 
     pub(crate) fn insert_or_get(&mut self, item: &T) -> usize {
-        match self
-            .sorted
-            .binary_search_by(|&ind| self.items[ind].cmp(item))
-        {
+        match self.sorted.binary_search_by(|&i| self.items[i].cmp(item)) {
             Ok(i) => self.sorted[i],
             Err(i) => {
                 let ind = self.items.len();
@@ -94,6 +91,15 @@ where
                 ind
             }
         }
+        /*self.sorted
+        .binary_search_by(|&ind| self.items[ind].cmp(item))
+        .and_then(|i| Ok(self.sorted[i]))
+        .unwrap_or_else(|i| {
+            let ind = self.items.len();
+            self.items.push(item.clone());
+            self.sorted.insert(i, ind);
+            ind
+        })*/
     }
 
     /// Inserts the item into the table. Tables only contain unique
