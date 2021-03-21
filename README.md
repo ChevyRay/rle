@@ -1,5 +1,7 @@
 # RLE
-A rust library for run-length encoded (RLE) sequences.
+A rust library for run-length encoded (RLE) sequences. This library
+is still a work-in-progress and not ready for any sort of public use
+yet, as I may still mess around with breaking API changes.
 
 [Run-length encoding on Wikipedia](https://en.wikipedia.org/wiki/Run-length_encoding)
 
