@@ -3,6 +3,7 @@ use crate::{
 };
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::fmt::Write;
 use std::ops::Deref;
 use std::slice::SliceIndex;
 
@@ -109,7 +110,10 @@ where
     }
 
     pub(crate) fn get_index(&self, item: &T) -> Option<usize> {
-        self.items.binary_search(item).ok()
+        self.sorted
+            .binary_search_by(|&i| self.items[i].cmp(item))
+            .ok()
+            .and_then(|i| Some(self.sorted[i]))
     }
 
     /// Extend the table with the contents of an iterator.
@@ -152,7 +156,7 @@ where
     pub fn encode<'a>(&'a self, items: &'a [T]) -> Result<Encoder<T>, Error> {
         // Fail if any of the items are not in the table
         for i in 0..items.len() {
-            if let Err(_) = self.items.binary_search(&items[i]) {
+            if let None = self.get_index(&items[i]) {
                 return Err(Error::TableMissingItems(i));
             }
         }
@@ -241,6 +245,14 @@ where
         } else {
             Err(Error::TableTooLarge(self.items.len()))
         }
+    }
+
+    pub fn encode_hex_str<'a>(&'a self, items: &'a [T]) -> Result<String, Error> {
+        let mut str = String::new();
+        for (ind, len) in self.encode(items)? {
+            write!(str, "{:X}:{:X},", ind, len).unwrap();
+        }
+        Ok(str)
     }
 
     /// Return an iterator that decodes the series of runs using this table

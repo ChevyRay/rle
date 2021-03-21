@@ -175,6 +175,22 @@ mod tests {
     use std::time::Instant;
 
     #[test]
+    fn hex_str() {
+        let str = "GGGGJJJJEEEEIIIIIIIAAAACCCCCCCCAAABBBBXXXXXRRRRRRRRR";
+        println!("STR: {}", str);
+
+        let str: Vec<char> = str.chars().collect();
+
+        let mut table = Table::from_slice(&str);
+        println!("{:?}", table.as_ref());
+        println!("{:?}", table.iter_sorted().copied().collect::<Vec<char>>());
+
+        let str = table.encode_hex_str(&str).unwrap();
+
+        println!("HEX: {}", str);
+    }
+
+    /*#[test]
     fn sorting() {
         let str: Vec<char> = "EEEEAAACCCCCCCBBBBBBDD".chars().collect();
         let mut table = Table::default();
@@ -283,5 +299,5 @@ mod tests {
         println!("Number of chars in decoded string .... {}", decoded.len());
         println!("Time to encode ....................... {} μs", encode_time);
         println!("Time to decode ....................... {} μs", decode_time);
-    }
+    }*/
 }
