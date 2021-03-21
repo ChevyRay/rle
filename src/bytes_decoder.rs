@@ -1,5 +1,7 @@
 use crate::{Index, Table};
 
+/// An iterator that decodes a run-length encoded sequence of bytes into
+/// a series of `T` values fetched from the table. See [decode_bytes](crate::Table::decode_bytes).
 pub struct BytesDecoder<'a, T>
 where
     T: Ord + Clone,

@@ -1,28 +1,47 @@
 use crate::bytes_decoder::BytesDecoder;
 use crate::decoder::Decoder;
-use crate::Error;
 use crate::{BytesEncoder, Encoder, EncoderMut, Index};
+use crate::{BytesEncoderMut, Error};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::marker::PhantomData;
 use std::ops::Deref;
 use std::slice::SliceIndex;
 
-/// A table to store items encoded into run-length format.
-#[derive(Default, Clone, Debug)]
+/// A table to store items to be encoded into run-length format.
+#[derive(Clone, Debug)]
 pub struct Table<T> {
     items: Vec<T>,
+}
+
+impl<T> Default for Table<T> {
+    fn default() -> Self {
+        Self { items: Vec::new() }
+    }
 }
 
 impl<T> Table<T>
 where
     T: Ord + Clone,
 {
-    /// Constructs a new, empty `Table<T>` with the specified capacity.
+    /// Constructs a new, empty table with the specified capacity.
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             items: Vec::with_capacity(capacity),
         }
+    }
+
+    /// Constructs a new table with items collected from an iterator.
+    pub fn from_iter<I: Iterator<Item = T>>(iter: I) -> Self {
+        let mut table = Self::default();
+        table.extend(iter);
+        table
+    }
+
+    /// Constructs a new table with items from a slice.
+    pub fn from_slice(slice: &[T]) -> Self {
+        let mut table = Self::default();
+        table.extend_from_slice(slice);
+        table
     }
 
     /// The number of unique elements in the table.
@@ -64,21 +83,28 @@ where
     /// Inserts the item into the table. Tables only contain unique
     /// values, so if the item is already in the table, it will not
     /// add a duplicate.
-    pub fn insert(&mut self, item: &T) {
-        self.insert_or_get(item);
+    pub fn insert(&mut self, item: T) {
+        self.insert_or_get(&item);
     }
 
     pub(crate) fn get_index(&self, item: &T) -> Option<usize> {
         self.items.binary_search(item).ok()
     }
 
-    /// Extend the table with the contents of the iterator.
-    pub fn extend<'a, I>(&'a mut self, items: I)
+    /// Extend the table with the contents of an iterator.
+    pub fn extend<I>(&mut self, items: I)
     where
-        I: Iterator<Item = &'a T>,
+        I: Iterator<Item = T>,
     {
         for item in items {
-            self.insert(&item);
+            self.insert_or_get(&item);
+        }
+    }
+
+    /// Extend the table with the contents of a slice.
+    pub fn extend_from_slice(&mut self, items: &[T]) {
+        for item in items {
+            self.insert_or_get(&item);
         }
     }
 
@@ -179,6 +205,25 @@ where
         }
     }
 
+    /// Returns an iterator to run-length encode the items as a sequence of bytes.
+    ///
+    /// Unlike [encode_bytes](Table<T>::encode_bytes), this method will add items
+    /// to the table as they were found, resulting in a table that contains one of
+    /// every item encountered in the encoded slice.
+    pub fn encode_bytes_mut<'a>(&'a mut self, items: &'a [T]) -> Result<BytesEncoderMut<T>, Error> {
+        if self.items.len() < 128 {
+            Ok(BytesEncoderMut {
+                rle: self.encode_mut(items),
+                run: None,
+                len: None,
+            })
+        } else {
+            Err(Error::TableTooLarge(self.items.len()))
+        }
+    }
+
+    /// Return an iterator that decodes the series of runs using this table
+    /// as the index lookup for the elements.
     pub fn decode<'a>(&'a self, runs: &'a [(Index, usize)]) -> Decoder<T> {
         Decoder {
             table: self,
@@ -186,6 +231,9 @@ where
             run: None,
         }
     }
+
+    /// Return an iterator that decodes the run-length encoded bytes using
+    /// this table as the index lookup for the elements.
     pub fn decode_bytes<'a>(&'a self, bytes: &'a [u8]) -> BytesDecoder<T> {
         BytesDecoder {
             table: self,

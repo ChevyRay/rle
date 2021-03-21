@@ -1,5 +1,7 @@
 use crate::{Index, Table};
 
+/// An iterator that decodes a sequence of runs into a series
+/// of `T` values fetched from the table. See [decode](crate::Table::decode).
 pub struct Decoder<'a, T>
 where
     T: Ord + Clone,

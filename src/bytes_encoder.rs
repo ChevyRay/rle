@@ -1,5 +1,7 @@
 use crate::Encoder;
 
+/// An iterator that run-length encodes a sequence of `T` values
+/// into a compressed byte format. See [encode_bytes](crate::Table::encode_bytes).
 pub struct BytesEncoder<'a, T> {
     pub(crate) rle: Encoder<'a, T>,
     pub(crate) run: Option<(u8, usize)>,

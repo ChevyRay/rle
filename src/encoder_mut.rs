@@ -1,6 +1,9 @@
 use crate::{Index, Table};
 use std::cmp::Ordering;
 
+/// An iterator that run-length encodes a sequence of `T` values
+/// into a series of runs, and also adds elements to the table as
+/// it encounters them. See [encode_mut](crate::Table::encode_mut).
 pub struct EncoderMut<'a, T> {
     pub(crate) table: &'a mut Table<T>,
     pub(crate) items: &'a [T],
