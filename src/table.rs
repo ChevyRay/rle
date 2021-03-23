@@ -1,14 +1,14 @@
 use crate::{
     BytesDecoder, BytesEncoder, BytesEncoderMut, Decoder, Encoder, EncoderMut, Error, Index,
 };
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use std::fmt::Write;
 use std::ops::Deref;
 use std::slice::SliceIndex;
 
 /// A table to store items to be encoded into run-length format.
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Table<T> {
     /// This is a list of the items in the order they were added,
     /// their positions in this list will not ever change.
@@ -298,37 +298,6 @@ impl<T> Deref for Table<T> {
 
     fn deref(&self) -> &Self::Target {
         &self.items
-    }
-}
-
-#[cfg(feature = "serde")]
-impl<T> Serialize for Table<T>
-where
-    Vec<T>: Serialize,
-{
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
-    {
-        self.items.serialize(serializer)
-    }
-}
-
-#[cfg(feature = "serde")]
-impl<'de, T> Deserialize<'de> for Table<T>
-where
-    T: Ord,
-    Vec<T>: Deserialize<'de>,
-{
-    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let items = Vec::<T>::deserialize(deserializer)?;
-        let mut sorted = Vec::with_capacity(items.len());
-        sorted.extend(0..items.len());
-        sorted.sort_by(|&a, &b| items[a].cmp(&items[b]));
-        Ok(Self { items, sorted })
     }
 }
 

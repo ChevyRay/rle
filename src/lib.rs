@@ -181,7 +181,7 @@ mod tests {
 
         let str: Vec<char> = str.chars().collect();
 
-        let mut table = Table::from_slice(&str);
+        let table = Table::from_slice(&str);
         println!("{:?}", table.as_ref());
         println!("{:?}", table.iter_sorted().copied().collect::<Vec<char>>());
 
